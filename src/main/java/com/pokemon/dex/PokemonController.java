@@ -1,29 +1,29 @@
 package com.pokemon.dex;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/pokemons")
 public class PokemonController {
-    private List<Pokemon> pokemons = new ArrayList<>();
-    private int proximoId = 1;
+    @Autowired
+    PokemonRepository repository;
 
     @GetMapping
-    private List<Pokemon> listar() {
-        return pokemons;
+    private Iterable<Pokemon> listar() {
+        return repository.findAll();
     }
 
     @GetMapping("/{id}")
     private Pokemon descrever(@PathVariable int id) {
-        Pokemon pokemon = buscarPokemonPorId(id);
+        Optional<Pokemon> pokemonOptional = repository.findById(id);
 
-        if(pokemon != null) {
-            return pokemon;
+        if(pokemonOptional.isPresent()) {
+            return pokemonOptional.get();
         }
 
         throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -32,42 +32,31 @@ public class PokemonController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     private void inserir(@RequestBody Pokemon pokemon) {
-        pokemon.setId(proximoId);
-        proximoId++;
-        pokemons.add(pokemon);
+        repository.save(pokemon);
     }
 
     @PutMapping("/{id}")
     private void atualizar(@PathVariable int id, @RequestBody Pokemon pokemon) {
-        Pokemon pokemonEncontrado = buscarPokemonPorId(id);
+        Optional<Pokemon> pokemonOptional = repository.findById(id);
 
-        if(pokemonEncontrado != null) {
-            pokemonEncontrado.atualizar(pokemon);
-            return;
+        if(pokemonOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        Pokemon pokemonEncontrado = pokemonOptional.get();
+        pokemonEncontrado.atualizar(pokemon);
+
+        repository.save(pokemonEncontrado);
     }
 
     @DeleteMapping("/{id}")
     private void remover(@PathVariable int id) {
-        Pokemon pokemon = buscarPokemonPorId(id);
+        Optional<Pokemon> pokemonOptional = repository.findById(id);
 
-        if(pokemon != null) {
-            pokemons.remove(pokemon);
-            return;
+        if(pokemonOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-    }
-
-    private Pokemon buscarPokemonPorId(int id) {
-        for(Pokemon pokemon : pokemons) {
-            if(pokemon.getId() == id) {
-                return pokemon;
-            }
-        }
-
-        return null;
+        repository.delete(pokemonOptional.get());
     }
 }
