@@ -66,7 +66,7 @@ public class PokemonController {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     public List<String> tratar(ConstraintViolationException exception) {
         List<String> erros = new ArrayList<>();
 
